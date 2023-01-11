@@ -22,15 +22,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
  * int32_t at file beginning for frame count
  *
  * For each frame:
- * int64_t: timestamp
+ * float: timestamp
  * int32_t: depthSize
  * int32_t: imageSize
  * depthSize * unsigned char: depth_compress_buf
  * imageSize * unsigned char: encodedImage->data.ptr
  */
 
+// using demo for tum datasets:
+// ./convert_imagesToKlg --depthdir /home/zhy/datasets/IIP2023/Sequence1/20/depth \
+//                       --rgbdir /home/zhy/datasets/IIP2023/Sequence1/20/rgb \
+//                       --timestamps /home/zhy/datasets/IIP2023/Sequence1/20/rgb.txt\
+//                       -s 0.001 \
+//                       --out /home/zhy/datasets/IIP2023/Sequence1/results/LFR/ElasticFusion/1.klg
+
 #include "../common/common.h"
 #include <fstream>
+#include <algorithm>
 
 using namespace std;
 using namespace cv;
@@ -95,8 +103,8 @@ int main(int argc, char * argv[])
         const string& pathRGB = dirRGB + inputRGBs[i];
         const string& pathDepth = dirDepth + inputDepths[i];
 
-        if(getFileIndex(pathRGB) != getFileIndex(pathDepth))
-          throw std::invalid_argument("RGB and Depth indexes are not matching.");
+        // if(getFileIndex(pathRGB) != getFileIndex(pathDepth))
+        //   throw std::invalid_argument("RGB and Depth indexes are not matching.");
 
         // Load input
         cv::Mat rgb = imread(pathRGB);
@@ -111,7 +119,14 @@ int main(int argc, char * argv[])
         if(depthScale != 1 || depth.type() != CV_16UC1) depth.convertTo(depth, CV_16UC1, depthScale);
 
         if(timestamps.size()){
-            timestamp = std::stod(timestamps[i]) * tss;
+            // get the space index
+	    int space_index = timestamps[i].find(" ");
+	    
+	    // genernate timestamp str
+	    string timestamp_str = timestamps[i].substr(0, space_index);
+	    
+            // genernate time stamp value
+            timestamp = std::stod(timestamp_str) * 1e6;
         } else {
             timestamp += timeStep;
         }
